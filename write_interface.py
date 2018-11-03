@@ -43,6 +43,8 @@ class CWriteInterface(CWriteBase):
 		self.m_content += self.__write_connect()
 		self.m_content += self.__write_connect_by_cfg()
 		self.m_content += self.__write_disconnect()
+		create_sql = info_dict.get(CSqlParse.CREATE_TABELS_SQL)
+		self.m_content += self.__write_create(create_sql)
 		# 获取每一个存储过程的参数
 		method_list = info_dict.get(CSqlParse.METHOD_LIST)
 		if method_list is None:
@@ -106,6 +108,7 @@ class CWriteInterface(CWriteBase):
 				return content
 			content += "func (this *{0}) ".format(self.get_class_name()) + method_define + " (error) {\n"
 			sql = method.get(CSqlParse.SQL)
+			sql = re.sub(r"\\", "", sql)
 			content += self.get_method_imp(input_params, output_params, output_class_name, in_ismul, out_ismul, sql)
 			content += "}\n\n"
 		return content
@@ -156,6 +159,8 @@ class CWriteInterface(CWriteBase):
 		if in_ismul is True:
 			tc = 2
 			end_str = "continue"
+		if in_ismul is False:
+			content += "\t"*1 + "tx.Commit()\n"
 		content += "\t"*tc + 'if err != nil {\n'
 		content += "\t"*(tc+1) + '{0}\n'.format(end_str)
 		content += "\t"*tc + '}\n'
@@ -165,6 +170,7 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*tc + '}\n'
 		if in_ismul is True:
 			content += "\t"*1 + "}\n"
+			content += "\t"*1 + "tx.Commit()\n"
 		content += "\t"*1 + 'return nil\n'
 		return content
 
@@ -172,6 +178,7 @@ class CWriteInterface(CWriteBase):
 		content = ""
 		tc = 1
 		var_name = "input"
+		content += "\t"*1 + "tx, _ := this.m_db.Begin()\n"
 		if in_ismul is True:
 			tc = 2
 			var_name = "v"
@@ -325,6 +332,23 @@ class CWriteInterface(CWriteBase):
 		content = ""
 		content += "func (this *CDbHandler) Disconnect() {\n"
 		content += "\t"*1 + 'this.m_db.Close()\n'
+		content += "}\n\n"
+		return content
+
+	def __write_create(self, create_sql):
+		content = ""
+		create_sql = re.sub(r"\\", "", create_sql)
+		sqls = create_sql.split(";")
+		content += "func (this *CDbHandler) Create() (error) {\n"
+		content += "\t"*1 + "var err error = nil\n"
+		for sql in sqls:
+			if sql == "":
+				continue
+			content += "\t"*1 + "_, err = this.m_db.Exec(`{0}`)\n".format(sql + ";")
+			content += "\t"*1 + "if err != nil {\n"
+			content += "\t"*2 + "return err\n"
+			content += "\t"*1 + "}\n"
+		content += "\t"*1 + "return nil\n"
 		content += "}\n\n"
 		return content
 

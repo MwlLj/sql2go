@@ -13,10 +13,10 @@ class CWriteBase(object):
 		return param_type
 
 	def get_interface_name(self, method_name):
-		return CStringTools.underling2HumpLarger(method_name)
+		return CStringTools.upperFirstByte(method_name)
 
 	def get_input_struct_name(self, method_name):
-		return "C{0}Input".format(CStringTools.underling2HumpLarger(method_name))
+		return "C{0}Input".format(CStringTools.upperFirstByte(method_name))
 
 	def get_output_struct_name(self, method_name):
-		return "C{0}Output".format(CStringTools.underling2HumpLarger(method_name))
+		return "C{0}Output".format(CStringTools.upperFirstByte(method_name))

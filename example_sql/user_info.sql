@@ -27,14 +27,14 @@ create table if not exists user_info(
 #end
 
 /*
-	@bref 插入一条记录
+	@bref 插入记录
 	@is_brace true
-	@in_isarr false
+	@in_isarr true
 	@out_isarr false
 	@in username: string
 	@in userage: int
 */
-#define add_userinfo
+#define addUserinfo
 insert into user_info values(null, {0}, {1});
 #end
 
@@ -48,7 +48,7 @@ insert into user_info values(null, {0}, {1});
 	@out username: string
 	@out userage: int
 */
-#define get_userinfo_by_id
+#define getUserinfoById
 select * from user_info
 where id = {0};
 #end
@@ -62,7 +62,7 @@ where id = {0};
 	@out username: string
 	@out userage: int
 */
-#define get_all_userinfo
+#define getAllUserinfo
 select * from user_info;
 #end
 
@@ -73,7 +73,7 @@ select * from user_info;
 	@out_isarr false
 	@in id: int
 */
-#define delete_user
+#define deleteUser
 delete from user_info where id = {0};
 #end
 
@@ -85,7 +85,7 @@ delete from user_info where id = {0};
 	@in username: string
 	@in id: int
 */
-#define update_username
+#define updateUsername
 update user_info set username = {0} where id = {1};
 #end
 
@@ -97,7 +97,7 @@ update user_info set username = {0} where id = {1};
 	@in id: int
 	@in username: string
 */
-#define update_username_2
+#define updateUsername2
 update user_info set username = {1} where id = {0};
 #end
 
@@ -109,6 +109,6 @@ update user_info set username = {1} where id = {0};
 	@in condition[cond]: string
 	@in username: string
 */
-#define update_username_3
+#define updateUsername3
 update user_info set username = {1} {0};
 #end
