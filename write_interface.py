@@ -44,7 +44,8 @@ class CWriteInterface(CWriteBase):
 		self.m_content += self.__write_connect_by_cfg()
 		self.m_content += self.__write_disconnect()
 		create_sql = info_dict.get(CSqlParse.CREATE_TABELS_SQL)
-		self.m_content += self.__write_create(create_sql)
+		create_functions = info_dict.get(CSqlParse.CREATE_FUNCTION_SQLS)
+		self.m_content += self.__write_create(create_sql, create_functions)
 		# 获取每一个存储过程的参数
 		method_list = info_dict.get(CSqlParse.METHOD_LIST)
 		if method_list is None:
@@ -335,19 +336,26 @@ class CWriteInterface(CWriteBase):
 		content += "}\n\n"
 		return content
 
-	def __write_create(self, create_sql):
+	def __write_create(self, create_sql, create_functions):
 		content = ""
 		create_sql = re.sub(r"\\", "", create_sql)
 		sqls = create_sql.split(";")
 		content += "func (this *CDbHandler) Create() (error) {\n"
 		content += "\t"*1 + "var err error = nil\n"
+		def err_content():
+			con = ""
+			con += "\t"*1 + "if err != nil {\n"
+			con += "\t"*2 + "return err\n"
+			con += "\t"*1 + "}\n"
+			return con
 		for sql in sqls:
 			if sql == "":
 				continue
 			content += "\t"*1 + "_, err = this.m_db.Exec(`{0}`)\n".format(sql + ";")
-			content += "\t"*1 + "if err != nil {\n"
-			content += "\t"*2 + "return err\n"
-			content += "\t"*1 + "}\n"
+			content += err_content()
+		for sql in create_functions:
+			content += "\t"*1 + "_, err = this.m_db.Exec(`{0}`)\n".format(sql)
+			content += err_content()
 		content += "\t"*1 + "return nil\n"
 		content += "}\n\n"
 		return content
