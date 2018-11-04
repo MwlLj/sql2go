@@ -262,7 +262,7 @@ class CWriteInterface(CWriteBase):
 
 	def __write_connect(self):
 		content = ""
-		content += "func (this *CDbHandler) Connect(host string, port uint, username string, userpwd string, dbname string) (err error) {\n"
+		content += "func (this *CDbHandler) Connect(host string, port uint, username string, userpwd string, dbname string, dbtype string) (err error) {\n"
 		content += "\t"*1 + "b := bytes.Buffer{}\n"
 		content += "\t"*1 + "b.WriteString(username)\n"
 		content += "\t"*1 + 'b.WriteString(":")\n'
@@ -273,7 +273,15 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'b.WriteString(strconv.FormatUint(uint64(port), 10))\n'
 		content += "\t"*1 + 'b.WriteString(")/")\n'
 		content += "\t"*1 + 'b.WriteString(dbname)\n'
-		content += "\t"*1 + 'this.m_db, err = sql.Open("mysql", b.String())\n'
+		content += "\t"*1 + 'var name string\n'
+		content += "\t"*1 + 'if (dbtype == "mysql") {\n'
+		content += "\t"*2 + 'name = b.String()\n'
+		content += "\t"*1 + '} else if (dbtype == "sqlite") {\n'
+		content += "\t"*2 + 'name = dbname\n'
+		content += "\t"*1 + '} else {\n'
+		content += "\t"*2 + 'return errors.New("dbtype not support")\n'
+		content += "\t"*1 + '}\n'
+		content += "\t"*1 + 'this.m_db, err = sql.Open(dbtype, name)\n'
 		content += "\t"*1 + 'if err != nil {\n'
 		content += "\t"*2 + 'return err\n'
 		content += "\t"*1 + '}\n'
@@ -298,6 +306,7 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'var username string = "root"\n'
 		content += "\t"*1 + 'var userpwd string = "123456"\n'
 		content += "\t"*1 + 'var dbname string = "test"\n'
+		content += "\t"*1 + 'var dbtype string = "mysql"\n'
 		content += "\t"*1 + 'for {\n'
 		content += "\t"*2 + 'a, _, c := br.ReadLine()\n'
 		content += "\t"*2 + 'if c == io.EOF {\n'
@@ -323,9 +332,11 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*3 + 'userpwd = v\n'
 		content += "\t"*2 + 'case "dbname":\n'
 		content += "\t"*3 + 'dbname = v\n'
+		content += "\t"*2 + 'case "dbtype":\n'
+		content += "\t"*3 + 'dbtype = v\n'
 		content += "\t"*2 + '}\n'
 		content += "\t"*1 + '}\n'
-		content += "\t"*1 + 'return this.Connect(host, port, username, userpwd, dbname)\n'
+		content += "\t"*1 + 'return this.Connect(host, port, username, userpwd, dbname, dbtype)\n'
 		content += "}\n\n"
 		return content
 
@@ -371,6 +382,7 @@ class CWriteInterface(CWriteBase):
 		self.m_content += "\t"*1 + '"{0}"\n'.format("regexp")
 		self.m_content += "\t"*1 + '"{0}"\n'.format("strconv")
 		self.m_content += "\t"*1 + '"{0}"\n'.format("fmt")
+		self.m_content += "\t"*1 + '"{0}"\n'.format("errors")
 		self.m_content += ")\n\n"
 
 
