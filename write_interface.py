@@ -203,7 +203,7 @@ class CWriteInterface(CWriteBase):
 		for param in output_params:
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
-			param_type = self.type_change(param_type)
+			param_type = self.type_null_change(param_type)
 			content += "\t"*2 + "var {0} {1}\n".format(param_name, param_type)
 		content += "\t"*2 + "scanErr := rows.Scan("
 		i = 0
@@ -223,8 +223,9 @@ class CWriteInterface(CWriteBase):
 		else:
 			pre = "output"
 		for param in output_params:
+			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
-			content += "\t"*2 + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), param_name)
+			content += "\t"*2 + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
 		if out_ismul is True:
 			content += "\t"*2 + "*output = append(*output, tmp)\n"
 		return content

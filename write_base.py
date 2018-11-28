@@ -12,6 +12,35 @@ class CWriteBase(object):
 			param_type = "float64"
 		return param_type
 
+	def type_null_change(self, param_type):
+		if param_type == "float":
+			param_type = "sql.NullFloat64"
+		elif param_type == "double":
+			param_type = "sql.NullFloat64"
+		elif param_type == "string":
+			param_type = "sql.NullString"
+		elif param_type == "int" or param_type == "int64" or param_type == "int32":
+			param_type = "sql.NullInt64"
+		elif param_type == "bool":
+			param_type = "sql.NullBool"
+		return param_type
+
+	def type_back(self, param_type, param_name):
+		result = ""
+		if param_type == "float" or param_type == "double":
+			result = "{0}.Float64".format(param_name)
+		elif param_type == "string":
+			result = "{0}.String".format(param_name)
+		elif param_type == "int":
+			result = "int({0}.Int64)".format(param_name)
+		elif param_name == "int32":
+			result = "int32({0}.Int64)".format(param_name)
+		elif param_type == "bool":
+			result = "{0}.Bool"
+		else:
+			raise SystemError("[ERROR] param_type is not support")
+		return result
+
 	def get_interface_name(self, method_name):
 		return CStringTools.upperFirstByte(method_name)
 
