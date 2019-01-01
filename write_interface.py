@@ -354,6 +354,7 @@ class CWriteInterface(CWriteBase):
 		sqls = create_sql.split(";")
 		content += "func (this *CDbHandler) Create() (error) {\n"
 		content += "\t"*1 + "var err error = nil\n"
+		content += "\t"*1 + "var _ error = err\n"
 		def err_content():
 			con = ""
 			con += "\t"*1 + "if err != nil {\n"
