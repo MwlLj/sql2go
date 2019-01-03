@@ -107,7 +107,7 @@ class CWriteInterface(CWriteBase):
 				method_define += "{0}(input *{1}, output *{2})".format(method_name, input_str, output_str)
 			else:
 				return content
-			content += "func (this *{0}) ".format(self.get_class_name()) + method_define + " (error) {\n"
+			content += "func (this *{0}) ".format(self.get_class_name()) + method_define + " (error, uint64) {\n"
 			sql = method.get(CSqlParse.SQL)
 			sql = re.sub(r"\\", "", sql)
 			content += self.get_method_imp(input_params, output_params, output_class_name, in_ismul, out_ismul, sql)
@@ -142,6 +142,7 @@ class CWriteInterface(CWriteBase):
 	def get_method_imp(self, input_params, output_params, output_class_name, in_ismul, out_ismul, sql):
 		content = ""
 		sql, fulls = self.__replace_sql_brace(input_params, sql, False)
+		content += "\t"*1 + 'var rowCount uint64 = 0\n'
 		content += "\t"*1 + 'stmt, err := this.m_db.Prepare(fmt.Sprintf(`{0}`'.format(sql)
 		if input_params is not None:
 			for param in input_params:
@@ -151,12 +152,12 @@ class CWriteInterface(CWriteBase):
 					content += ", input.{0}".format(CStringTools.upperFirstByte(param_name))
 		content += "))\n"
 		content += "\t"*1 + 'if err != nil {\n'
-		content += "\t"*2 + 'return err\n'
+		content += "\t"*2 + 'return err, rowCount\n'
 		content += "\t"*1 + '}\n'
 		content += "\t"*1 + 'defer stmt.Close()\n'
 		content += self.__write_input(in_ismul, input_params, fulls)
 		tc = 1
-		end_str = "return err"
+		end_str = "return err, rowCount"
 		if in_ismul is True:
 			tc = 2
 			end_str = "continue"
@@ -167,12 +168,13 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*tc + '}\n'
 		content += "\t"*tc + 'defer rows.Close()\n'
 		content += "\t"*tc + 'for rows.Next() {\n'
+		content += "\t"*(tc+1) + 'rowCount += 1\n'
 		content += self.__write_output(output_class_name, output_params, out_ismul)
 		content += "\t"*tc + '}\n'
 		if in_ismul is True:
 			content += "\t"*1 + "}\n"
 			content += "\t"*1 + "tx.Commit()\n"
-		content += "\t"*1 + 'return nil\n'
+		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
 	def __write_input(self, in_ismul, input_params, fulls):
@@ -197,15 +199,15 @@ class CWriteInterface(CWriteBase):
 		if length == 0:
 			return content
 		if out_ismul is True:
-			content += "\t"*2 + "tmp := {0}".format(output_class_name) + "{}\n"
+			content += "\t"*3 + "tmp := {0}".format(output_class_name) + "{}\n"
 		else:
 			pass
 		for param in output_params:
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			param_type = self.type_null_change(param_type)
-			content += "\t"*2 + "var {0} {1}\n".format(param_name, param_type)
-		content += "\t"*2 + "scanErr := rows.Scan("
+			content += "\t"*3 + "var {0} {1}\n".format(param_name, param_type)
+		content += "\t"*3 + "scanErr := rows.Scan("
 		i = 0
 		for param in output_params:
 			i += 1
@@ -214,9 +216,9 @@ class CWriteInterface(CWriteBase):
 			if i < length:
 				content += ", "
 		content += ")\n"
-		content += "\t"*2 + "if scanErr != nil {\n"
-		content += "\t"*3 + "continue\n"
-		content += "\t"*2 + "}\n"
+		content += "\t"*3 + "if scanErr != nil {\n"
+		content += "\t"*4 + "continue\n"
+		content += "\t"*3 + "}\n"
 		pre = ""
 		if out_ismul is True:
 			pre = "tmp"
@@ -225,9 +227,9 @@ class CWriteInterface(CWriteBase):
 		for param in output_params:
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
-			content += "\t"*2 + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
+			content += "\t"*3 + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
 		if out_ismul is True:
-			content += "\t"*2 + "*output = append(*output, tmp)\n"
+			content += "\t"*3 + "*output = append(*output, tmp)\n"
 		return content
 
 	def __write_query_params(self, input_params, var_name, fulls):
