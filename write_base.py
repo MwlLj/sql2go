@@ -36,7 +36,7 @@ class CWriteBase(object):
 		elif param_name == "int32":
 			result = "int32({0}.Int64)".format(param_name)
 		elif param_type == "bool":
-			result = "{0}.Bool"
+			result = "bool({0}.Bool)".format(param_name)
 		else:
 			raise SystemError("[ERROR] param_type is not support")
 		return result
