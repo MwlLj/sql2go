@@ -151,10 +151,10 @@ class CWriteInterface(CWriteBase):
 					param_name = param.get(CSqlParse.PARAM_NAME)
 					content += ", input.{0}".format(CStringTools.upperFirstByte(param_name))
 		content += "))\n"
-		content += "\t"*1 + 'defer stmt.Close()\n'
 		content += "\t"*1 + 'if err != nil {\n'
 		content += "\t"*2 + 'return err, rowCount\n'
 		content += "\t"*1 + '}\n'
+		content += "\t"*1 + 'defer stmt.Close()\n'
 		content += self.__write_input(in_ismul, input_params, fulls)
 		tc = 1
 		end_str = "return err, rowCount"
@@ -163,10 +163,10 @@ class CWriteInterface(CWriteBase):
 			end_str = "continue"
 		if in_ismul is False:
 			content += "\t"*1 + "tx.Commit()\n"
-		content += "\t"*tc + 'defer rows.Close()\n'
 		content += "\t"*tc + 'if err != nil {\n'
 		content += "\t"*(tc+1) + '{0}\n'.format(end_str)
 		content += "\t"*tc + '}\n'
+		content += "\t"*tc + 'defer rows.Close()\n'
 		content += "\t"*tc + 'for rows.Next() {\n'
 		content += "\t"*(tc+1) + 'rowCount += 1\n'
 		content += self.__write_output(output_class_name, output_params, out_ismul)
