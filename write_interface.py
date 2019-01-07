@@ -155,7 +155,7 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*2 + 'return err, rowCount\n'
 		content += "\t"*1 + '}\n'
 		content += "\t"*1 + 'defer stmt.Close()\n'
-		content += self.__write_input(in_ismul, input_params, fulls)
+		content += self.__write_input(in_ismul, out_ismul, input_params, fulls)
 		tc = 1
 		end_str = "return err, rowCount"
 		if in_ismul is True:
@@ -166,18 +166,21 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*tc + 'if err != nil {\n'
 		content += "\t"*(tc+1) + '{0}\n'.format(end_str)
 		content += "\t"*tc + '}\n'
-		content += "\t"*tc + 'defer rows.Close()\n'
-		content += "\t"*tc + 'for rows.Next() {\n'
-		content += "\t"*(tc+1) + 'rowCount += 1\n'
-		content += self.__write_output(output_class_name, output_params, out_ismul)
-		content += "\t"*tc + '}\n'
+		if out_ismul is True:
+			content += "\t"*tc + 'defer rows.Close()\n'
+			content += "\t"*tc + 'for rows.Next() {\n'
+			content += "\t"*(tc+1) + 'rowCount += 1\n'
+			content += self.__write_output(output_class_name, output_params, out_ismul)
+			content += "\t"*tc + '}\n'
+		else:
+			content += "\t"*tc + "var _ = result\n"
 		if in_ismul is True:
 			content += "\t"*1 + "}\n"
 			content += "\t"*1 + "tx.Commit()\n"
 		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
-	def __write_input(self, in_ismul, input_params, fulls):
+	def __write_input(self, in_ismul, out_ismul, input_params, fulls):
 		content = ""
 		tc = 1
 		var_name = "input"
@@ -186,7 +189,10 @@ class CWriteInterface(CWriteBase):
 			tc = 2
 			var_name = "v"
 			content += "\t"*1 + "for _, v := range *input {\n"
-		content += "\t"*tc + "rows, err := stmt.Query("
+		if out_ismul is True:
+			content += "\t"*tc + "rows, err := stmt.Query("
+		else:
+			content += "\t"*tc + "result, err := stmt.Exec("
 		content += self.__write_query_params(input_params, var_name, fulls)
 		content += ")\n"
 		return content
