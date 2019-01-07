@@ -279,7 +279,7 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'var name string\n'
 		content += "\t"*1 + 'if (dbtype == "mysql") {\n'
 		content += "\t"*2 + 'name = b.String()\n'
-		content += "\t"*1 + '} else if (dbtype == "sqlite") {\n'
+		content += "\t"*1 + '} else if (dbtype == "sqlite3") {\n'
 		content += "\t"*2 + 'name = dbname\n'
 		content += "\t"*1 + '} else {\n'
 		content += "\t"*2 + 'return errors.New("dbtype not support")\n'
