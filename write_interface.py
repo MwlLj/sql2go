@@ -141,21 +141,21 @@ class CWriteInterface(CWriteBase):
 
 	def get_method_imp(self, input_params, output_params, output_class_name, in_ismul, out_ismul, sql):
 		content = ""
-		sql, fulls = self.__replace_sql_brace(input_params, sql, False)
+		# sql, fulls = self.__replace_sql_brace(input_params, sql, False)
 		content += "\t"*1 + 'var rowCount uint64 = 0\n'
-		content += "\t"*1 + 'stmt, err := this.m_db.Prepare(fmt.Sprintf(`{0}`'.format(sql)
-		if input_params is not None:
-			for param in input_params:
-				is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
-				if is_cond is True:
-					param_name = param.get(CSqlParse.PARAM_NAME)
-					content += ", input.{0}".format(CStringTools.upperFirstByte(param_name))
-		content += "))\n"
-		content += "\t"*1 + 'if err != nil {\n'
-		content += "\t"*2 + 'return err, rowCount\n'
-		content += "\t"*1 + '}\n'
-		content += "\t"*1 + 'defer stmt.Close()\n'
-		content += self.__write_input(in_ismul, out_ismul, input_params, fulls)
+		# content += "\t"*1 + 'stmt, err := this.m_db.Prepare(fmt.Sprintf(`{0}`'.format(sql)
+		# if input_params is not None:
+		# 	for param in input_params:
+		# 		is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
+		# 		if is_cond is True:
+		# 			param_name = param.get(CSqlParse.PARAM_NAME)
+		# 			content += ", input.{0}".format(CStringTools.upperFirstByte(param_name))
+		# content += "))\n"
+		# content += "\t"*1 + 'if err != nil {\n'
+		# content += "\t"*2 + 'return err, rowCount\n'
+		# content += "\t"*1 + '}\n'
+		# content += "\t"*1 + 'defer stmt.Close()\n'
+		content += self.__write_input(in_ismul, out_ismul, input_params, sql)
 		tc = 1
 		end_str = "return err, rowCount"
 		if in_ismul is True:
@@ -170,7 +170,7 @@ class CWriteInterface(CWriteBase):
 			content += "\t"*tc + 'defer rows.Close()\n'
 			content += "\t"*tc + 'for rows.Next() {\n'
 			content += "\t"*(tc+1) + 'rowCount += 1\n'
-			content += self.__write_output(output_class_name, output_params, out_ismul)
+			content += self.__write_output(tc+1, output_class_name, output_params, out_ismul)
 			content += "\t"*tc + '}\n'
 		else:
 			content += "\t"*tc + "var _ = result\n"
@@ -180,7 +180,7 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
-	def __write_input(self, in_ismul, out_ismul, input_params, fulls):
+	def __write_input(self, in_ismul, out_ismul, input_params, sql):
 		content = ""
 		tc = 1
 		var_name = "input"
@@ -190,14 +190,23 @@ class CWriteInterface(CWriteBase):
 			var_name = "v"
 			content += "\t"*1 + "for _, v := range *input {\n"
 		if out_ismul is True:
-			content += "\t"*tc + "rows, err := stmt.Query("
+			content += "\t"*tc + "rows, err := this.m_db.Query("
 		else:
-			content += "\t"*tc + "result, err := stmt.Exec("
+			content += "\t"*tc + "result, err := this.m_db.Exec("
+		sql, fulls = self.__replace_sql_brace(input_params, sql, False)
+		content += 'fmt.Sprintf(`{0}`'.format(sql)
+		if input_params is not None:
+			for param in input_params:
+				is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
+				if is_cond is True:
+					param_name = param.get(CSqlParse.PARAM_NAME)
+					content += ", {1}.{0}".format(CStringTools.upperFirstByte(param_name), var_name)
+		content += ")"
 		content += self.__write_query_params(input_params, var_name, fulls)
 		content += ")\n"
 		return content
 
-	def __write_output(self, output_class_name, output_params, out_ismul):
+	def __write_output(self, tc, output_class_name, output_params, out_ismul):
 		content = ""
 		length = 0
 		if output_params is not None:
@@ -205,15 +214,15 @@ class CWriteInterface(CWriteBase):
 		if length == 0:
 			return content
 		if out_ismul is True:
-			content += "\t"*3 + "tmp := {0}".format(output_class_name) + "{}\n"
+			content += "\t"*tc + "tmp := {0}".format(output_class_name) + "{}\n"
 		else:
 			pass
 		for param in output_params:
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			param_type = self.type_null_change(param_type)
-			content += "\t"*3 + "var {0} {1}\n".format(param_name, param_type)
-		content += "\t"*3 + "scanErr := rows.Scan("
+			content += "\t"*tc + "var {0} {1}\n".format(param_name, param_type)
+		content += "\t"*tc + "scanErr := rows.Scan("
 		i = 0
 		for param in output_params:
 			i += 1
@@ -222,9 +231,9 @@ class CWriteInterface(CWriteBase):
 			if i < length:
 				content += ", "
 		content += ")\n"
-		content += "\t"*3 + "if scanErr != nil {\n"
-		content += "\t"*4 + "continue\n"
-		content += "\t"*3 + "}\n"
+		content += "\t"*tc + "if scanErr != nil {\n"
+		content += "\t"*(tc+1) + "continue\n"
+		content += "\t"*tc + "}\n"
 		pre = ""
 		if out_ismul is True:
 			pre = "tmp"
@@ -233,9 +242,9 @@ class CWriteInterface(CWriteBase):
 		for param in output_params:
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
-			content += "\t"*3 + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
+			content += "\t"*tc + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
 		if out_ismul is True:
-			content += "\t"*3 + "*output = append(*output, tmp)\n"
+			content += "\t"*tc + "*output = append(*output, tmp)\n"
 		return content
 
 	def __write_query_params(self, input_params, var_name, fulls):
@@ -248,6 +257,8 @@ class CWriteInterface(CWriteBase):
 			if is_cond is False:
 				not_cond_params.append(param)
 		length = len(not_cond_params)
+		if length > 0:
+			content += ", "
 		i = 0
 		for number, keyword in fulls:
 			param = input_params[number]
@@ -283,9 +294,9 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'b.WriteString(")/")\n'
 		content += "\t"*1 + 'b.WriteString(dbname)\n'
 		content += "\t"*1 + 'var name string\n'
-		content += "\t"*1 + 'if (dbtype == "mysql") {\n'
+		content += "\t"*1 + 'if dbtype == "mysql" {\n'
 		content += "\t"*2 + 'name = b.String()\n'
-		content += "\t"*1 + '} else if (dbtype == "sqlite3") {\n'
+		content += "\t"*1 + '} else if dbtype == "sqlite3" {\n'
 		content += "\t"*2 + 'name = dbname\n'
 		content += "\t"*1 + '} else {\n'
 		content += "\t"*2 + 'return errors.New("dbtype not support")\n'
