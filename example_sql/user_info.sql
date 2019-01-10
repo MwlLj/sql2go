@@ -112,3 +112,17 @@ update user_info set username = {1} where id = {0};
 #define updateUsername3
 update user_info set username = {1} {0};
 #end
+
+/*
+	@bref 子句测试
+	@is_brace true
+	@in_isarr false
+	@out_isarr false
+	@in userName: string
+	@in userAge: int
+	@sub updateUsername[-1]
+	@sub deleteUser[1]
+*/
+#define subTest
+insert into user_info values(null, {0}, {1});
+#end
