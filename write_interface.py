@@ -188,33 +188,23 @@ class CWriteInterface(CWriteBase):
 		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 		input_class_name = self.get_input_struct_name(func_name)
 		output_class_name = self.get_output_struct_name(func_name)
-		sql = method.get(CSqlParse.SQL)
-		sql = re.sub(r"\\", "", sql)
-		# sql, fulls = self.__replace_sql_brace(input_params, sql, False)
 		content += "\t"*1 + 'var rowCount uint64 = 0\n'
-		# content += "\t"*1 + 'stmt, err := this.m_db.Prepare(fmt.Sprintf(`{0}`'.format(sql)
-		# if input_params is not None:
-		# 	for param in input_params:
-		# 		is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
-		# 		if is_cond is True:
-		# 			param_name = param.get(CSqlParse.PARAM_NAME)
-		# 			content += ", input.{0}".format(CStringTools.upperFirstByte(param_name))
-		# content += "))\n"
-		# content += "\t"*1 + 'if err != nil {\n'
-		# content += "\t"*2 + 'return err, rowCount\n'
-		# content += "\t"*1 + '}\n'
-		# content += "\t"*1 + 'defer stmt.Close()\n'
-		content += self.__write_input(in_ismul, out_ismul, input_params, sql)
+		content += "\t"*1 + "tx, _ := this.m_db.Begin()\n"
+		content += "\t"*1 + "var result sql.Result\n"
+		content += "\t"*1 + "var _ = result\n"
+		content += "\t"*1 + "var err error\n"
+		sub_func_sort_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
+		if sub_func_sort_list is None:
+			content += self.__write_input(method, "")
+		else:
+			for func_name in sub_func_sort_list:
+				method_info = self.m_parser.get_methodinfo_by_methodname(func_name)
+				content += self.__write_input(method_info, "")
 		tc = 1
-		end_str = "return err, rowCount"
 		if in_ismul is True:
 			tc = 2
-			end_str = "continue"
 		if in_ismul is False:
 			content += "\t"*1 + "tx.Commit()\n"
-		content += "\t"*tc + 'if err != nil {\n'
-		content += "\t"*(tc+1) + '{0}\n'.format(end_str)
-		content += "\t"*tc + '}\n'
 		if out_ismul is True:
 			content += "\t"*tc + 'defer rows.Close()\n'
 			content += "\t"*tc + 'for rows.Next() {\n'
@@ -224,24 +214,39 @@ class CWriteInterface(CWriteBase):
 		else:
 			content += "\t"*tc + "var _ = result\n"
 		if in_ismul is True:
-			content += "\t"*1 + "}\n"
 			content += "\t"*1 + "tx.Commit()\n"
 		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
-	def __write_input(self, in_ismul, out_ismul, input_params, sql):
+	def __write_input(self, method, param_no):
+		in_isarr = method.get(CSqlParse.IN_ISARR)
+		out_isarr = method.get(CSqlParse.OUT_ISARR)
+		in_ismul = None
+		out_ismul = None
+		if in_isarr == "true":
+			in_ismul = True
+		else:
+			in_ismul = False
+		if out_isarr == "true":
+			out_ismul = True
+		else:
+			out_ismul = False
+		func_name = method.get(CSqlParse.FUNC_NAME)
+		input_params = method.get(CSqlParse.INPUT_PARAMS)
+		sql = method.get(CSqlParse.SQL)
+		sql = re.sub(r"\\", "", sql)
+		# start
 		content = ""
 		tc = 1
-		var_name = "input"
-		content += "\t"*1 + "tx, _ := this.m_db.Begin()\n"
+		var_name = "input{0}".format(param_no)
 		if in_ismul is True:
 			tc = 2
 			var_name = "v"
-			content += "\t"*1 + "for _, v := range *input {\n"
+			content += "\t"*1 + "for _, v := range *input" + param_no + " {\n"
 		if out_ismul is True:
 			content += "\t"*tc + "rows, err := this.m_db.Query("
 		else:
-			content += "\t"*tc + "result, err := this.m_db.Exec("
+			content += "\t"*tc + "result, err = this.m_db.Exec("
 		sql, fulls = self.__replace_sql_brace(input_params, sql, False)
 		content += 'fmt.Sprintf(`{0}`'.format(sql)
 		if input_params is not None:
@@ -253,6 +258,17 @@ class CWriteInterface(CWriteBase):
 		content += ")"
 		content += self.__write_query_params(input_params, var_name, fulls)
 		content += ")\n"
+		tc = 1
+		end_str = "return err, rowCount"
+		if in_ismul is True:
+			tc = 2
+			end_str = "return err, rowCount"
+		content += "\t"*tc + 'if err != nil {\n'
+		content += "\t"*(tc+1) + 'tx.Rollback()\n'
+		content += "\t"*(tc+1) + '{0}\n'.format(end_str)
+		content += "\t"*tc + '}\n'
+		if in_ismul is True:
+			content += "\t"*1 + '}\n'
 		return content
 
 	def __write_output(self, tc, output_class_name, output_params, out_ismul):

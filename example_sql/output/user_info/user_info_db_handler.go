@@ -129,13 +129,17 @@ create table if not exists user_info(
 func (this *CDbHandler) AddUserinfo(input *[]CAddUserinfoInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
+	var result sql.Result
+	var _ = result
+	var err error
 	for _, v := range *input {
-		result, err := this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), v.Username, v.Userage)
+		result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), v.Username, v.Userage)
 		if err != nil {
-			continue
+			tx.Rollback()
+			return err, rowCount
 		}
-		var _ = result
 	}
+		var _ = result
 	tx.Commit()
 	return nil, rowCount
 }
@@ -143,12 +147,16 @@ func (this *CDbHandler) AddUserinfo(input *[]CAddUserinfoInput) (error, uint64) 
 func (this *CDbHandler) GetUserinfoById(input *CGetUserinfoByIdInput, output *CGetUserinfoByIdOutput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
-	result, err := this.m_db.Exec(fmt.Sprintf(`select * from user_info
+	var result sql.Result
+	var _ = result
+	var err error
+	result, err = this.m_db.Exec(fmt.Sprintf(`select * from user_info
 where id = ?;`), input.Id)
-	tx.Commit()
 	if err != nil {
+		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
 	var _ = result
 	return nil, rowCount
 }
@@ -156,11 +164,15 @@ where id = ?;`), input.Id)
 func (this *CDbHandler) GetAllUserinfo(output *[]CGetAllUserinfoOutput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
+	var result sql.Result
+	var _ = result
+	var err error
 	rows, err := this.m_db.Query(fmt.Sprintf(`select * from user_info;`))
-	tx.Commit()
 	if err != nil {
+		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
 	defer rows.Close()
 	for rows.Next() {
 		rowCount += 1
@@ -183,13 +195,17 @@ func (this *CDbHandler) GetAllUserinfo(output *[]CGetAllUserinfoOutput) (error, 
 func (this *CDbHandler) DeleteUser(input *[]CDeleteUserInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
+	var result sql.Result
+	var _ = result
+	var err error
 	for _, v := range *input {
-		result, err := this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
+		result, err = this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
 		if err != nil {
-			continue
+			tx.Rollback()
+			return err, rowCount
 		}
-		var _ = result
 	}
+		var _ = result
 	tx.Commit()
 	return nil, rowCount
 }
@@ -197,11 +213,15 @@ func (this *CDbHandler) DeleteUser(input *[]CDeleteUserInput) (error, uint64) {
 func (this *CDbHandler) UpdateUsername(input *CUpdateUsernameInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
-	result, err := this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
-	tx.Commit()
+	var result sql.Result
+	var _ = result
+	var err error
+	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
 	if err != nil {
+		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
 	var _ = result
 	return nil, rowCount
 }
@@ -209,11 +229,15 @@ func (this *CDbHandler) UpdateUsername(input *CUpdateUsernameInput) (error, uint
 func (this *CDbHandler) UpdateUsername2(input *CUpdateUsername2Input) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
-	result, err := this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
-	tx.Commit()
+	var result sql.Result
+	var _ = result
+	var err error
+	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
 	if err != nil {
+		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
 	var _ = result
 	return nil, rowCount
 }
@@ -221,11 +245,15 @@ func (this *CDbHandler) UpdateUsername2(input *CUpdateUsername2Input) (error, ui
 func (this *CDbHandler) UpdateUsername3(input *CUpdateUsername3Input) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
-	result, err := this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? %s;`, input.Condition), input.Username)
-	tx.Commit()
+	var result sql.Result
+	var _ = result
+	var err error
+	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? %s;`, input.Condition), input.Username)
 	if err != nil {
+		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
 	var _ = result
 	return nil, rowCount
 }
@@ -233,11 +261,27 @@ func (this *CDbHandler) UpdateUsername3(input *CUpdateUsername3Input) (error, ui
 func (this *CDbHandler) SubTest(input0 *CSubTestInput, inputN1 *CUpdateUsernameInput, inputP1 *[]CDeleteUserInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
-	result, err := this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input.UserName, input.UserAge)
-	tx.Commit()
+	var result sql.Result
+	var _ = result
+	var err error
+	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
 	if err != nil {
+		tx.Rollback()
 		return err, rowCount
 	}
+	result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input.UserName, input.UserAge)
+	if err != nil {
+		tx.Rollback()
+		return err, rowCount
+	}
+	for _, v := range *input {
+		result, err = this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
+		if err != nil {
+			tx.Rollback()
+			return err, rowCount
+		}
+	}
+	tx.Commit()
 	var _ = result
 	return nil, rowCount
 }
