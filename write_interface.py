@@ -109,6 +109,8 @@ class CWriteInterface(CWriteBase):
 		return method_define
 
 	def __sub_func_index_change(self, sub_func_index):
+		if sub_func_index == "":
+			return ""
 		result = ""
 		if int(sub_func_index) < 0:
 			result = "N" + str(int(sub_func_index) * -1)
@@ -197,9 +199,9 @@ class CWriteInterface(CWriteBase):
 		if sub_func_sort_list is None:
 			content += self.__write_input(method, "")
 		else:
-			for func_name in sub_func_sort_list:
+			for func_name, sub_func_index in sub_func_sort_list:
 				method_info = self.m_parser.get_methodinfo_by_methodname(func_name)
-				content += self.__write_input(method_info, "")
+				content += self.__write_input(method_info, sub_func_index)
 		tc = 1
 		if in_ismul is True:
 			tc = 2
@@ -218,7 +220,8 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
-	def __write_input(self, method, param_no):
+	def __write_input(self, method, sub_func_index):
+		param_no = self.__sub_func_index_change(sub_func_index)
 		in_isarr = method.get(CSqlParse.IN_ISARR)
 		out_isarr = method.get(CSqlParse.OUT_ISARR)
 		in_ismul = None

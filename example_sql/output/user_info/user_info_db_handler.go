@@ -264,17 +264,17 @@ func (this *CDbHandler) SubTest(input0 *CSubTestInput, inputN1 *CUpdateUsernameI
 	var result sql.Result
 	var _ = result
 	var err error
-	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
+	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), inputN1.Username, inputN1.Id)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
-	result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input.UserName, input.UserAge)
+	result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input0.UserName, input0.UserAge)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
-	for _, v := range *input {
+	for _, v := range *inputP1 {
 		result, err = this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
 		if err != nil {
 			tx.Rollback()
