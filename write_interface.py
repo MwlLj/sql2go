@@ -14,13 +14,14 @@ class CWriteInterface(CWriteBase):
 	DICT_KEY_INPUT_PARAMS = "input_params"
 	DICT_KEY_OUTPUT_PARAMS = "output_params"
 	DICT_KEY_OUTPUT_CLASSNAME = "output_classname"
-	def __init__(self, file_path, root="."):
+	def __init__(self, parser, file_path, root="."):
 		self.m_file_handler = CFileHandle()
 		self.m_file_name = ""
 		self.m_file_path = ""
 		self.m_content = ""
 		self.m_namespace = ""
 		self.m_procedure_info_list = []
+		self.m_parser = parser
 		self.__compare_file_path(file_path, root)
 
 	def __compare_file_path(self, file_path, root):
@@ -54,6 +55,69 @@ class CWriteInterface(CWriteBase):
 		# print(self.m_content)
 		self.m_file_handler.clear_write(self.m_content, self.m_file_path, "utf8")
 
+	def __join_method_param(self, method, method_define, param_no):
+		if method is None:
+			return method_define
+		func_name = method.get(CSqlParse.FUNC_NAME)
+		input_class_name = self.get_input_struct_name(func_name)
+		output_class_name = self.get_output_struct_name(func_name)
+		in_isarr = method.get(CSqlParse.IN_ISARR)
+		out_isarr = method.get(CSqlParse.OUT_ISARR)
+		in_ismul = None
+		out_ismul = None
+		if in_isarr == "true":
+			in_ismul = True
+		else:
+			in_ismul = False
+		if out_isarr == "true":
+			out_ismul = True
+		else:
+			out_ismul = False
+		input_params = method.get(CSqlParse.INPUT_PARAMS)
+		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
+		input_params_len = 0
+		output_params_len = 0
+		if input_params is not None:
+			input_params_len = len(input_params)
+		if output_params is not None:
+			output_params_len = len(output_params)
+		# 获取输入输出参数的字符串
+		input_str = input_class_name
+		output_str = output_class_name
+		if in_ismul is True:
+			input_str = "[]{0}".format(input_class_name)
+		if out_ismul is True:
+			output_str = "[]{0}".format(output_class_name)
+		if input_params_len == 0 and output_params_len == 0:
+			method_define += ""
+		elif input_params_len > 0 and output_params_len == 0:
+			method_define += "input{1} *{0}".format(input_str, param_no)
+		elif input_params_len == 0 and output_params_len > 0:
+			method_define += "output{1} *{0}".format(output_str, param_no)
+		elif input_params_len > 0 and output_params_len > 0:
+			method_define += "input{2} *{0}, output{2} *{1}".format(input_str, output_str, param_no)
+		else:
+			return None
+		sub_func_list = method.get(CSqlParse.SUB_FUNC_LIST)
+		if sub_func_list is None:
+			return method_define
+		else:
+			for sub_func_name, sub_func_index in sub_func_list:
+				method_info = self.m_parser.get_methodinfo_by_methodname(sub_func_name)
+				method_define += ", "
+				method_define = self.__join_method_param(method_info, method_define, self.__sub_func_index_change(sub_func_index))
+		return method_define
+
+	def __sub_func_index_change(self, sub_func_index):
+		result = ""
+		if int(sub_func_index) < 0:
+			result = "N" + str(int(sub_func_index) * -1)
+		elif int(sub_func_index) > 0:
+			result = "P" + sub_func_index
+		else:
+			result = "0"
+		return result
+
 	def __write_struct_method(self, method_list):
 		content = ""
 		for method in method_list:
@@ -65,52 +129,18 @@ class CWriteInterface(CWriteBase):
 			if is_group is not None and is_group is True:
 				continue
 			# ################################
-			method_define = ""
 			func_name = method.get(CSqlParse.FUNC_NAME)
 			method_name = self.get_interface_name(func_name)
-			input_class_name = self.get_input_struct_name(func_name)
-			output_class_name = self.get_output_struct_name(func_name)
-			in_isarr = method.get(CSqlParse.IN_ISARR)
-			out_isarr = method.get(CSqlParse.OUT_ISARR)
-			in_ismul = None
-			out_ismul = None
-			if in_isarr == "true":
-				in_ismul = True
-			else:
-				in_ismul = False
-			if out_isarr == "true":
-				out_ismul = True
-			else:
-				out_ismul = False
-			input_params = method.get(CSqlParse.INPUT_PARAMS)
-			output_params = method.get(CSqlParse.OUTPUT_PARAMS)
-			input_params_len = 0
-			output_params_len = 0
-			if input_params is not None:
-				input_params_len = len(input_params)
-			if output_params is not None:
-				output_params_len = len(output_params)
-			# 获取输入输出参数的字符串
-			input_str = input_class_name
-			output_str = output_class_name
-			if in_ismul is True:
-				input_str = "[]{0}".format(input_class_name)
-			if out_ismul is True:
-				output_str = "[]{0}".format(output_class_name)
-			if input_params_len == 0 and output_params_len == 0:
-				method_define += "{0}()".format(method_name)
-			elif input_params_len > 0 and output_params_len == 0:
-				method_define += "{0}(input *{1})".format(method_name, input_str)
-			elif input_params_len == 0 and output_params_len > 0:
-				method_define += "{0}(output *{1})".format(method_name, output_str)
-			elif input_params_len > 0 and output_params_len > 0:
-				method_define += "{0}(input *{1}, output *{2})".format(method_name, input_str, output_str)
-			else:
+			param_no = ""
+			if method.get(CSqlParse.SUB_FUNC_LIST) is not None:
+				param_no = "0"
+			method_define = self.__join_method_param(method, "", param_no)
+			if method_define is None:
 				return content
+			else:
+				method_define = "{0}({1})".format(method_name, method_define)
 			content += "func (this *{0}) ".format(self.get_class_name()) + method_define + " (error, uint64) {\n"
-			sql = method.get(CSqlParse.SQL)
-			sql = re.sub(r"\\", "", sql)
-			content += self.get_method_imp(input_params, output_params, output_class_name, in_ismul, out_ismul, sql)
+			content += self.get_method_imp(method)
 			content += "}\n\n"
 		return content
 
@@ -139,8 +169,27 @@ class CWriteInterface(CWriteBase):
 			sql = re.sub(keyword, tmp, sql)
 		return sql, fulls
 
-	def get_method_imp(self, input_params, output_params, output_class_name, in_ismul, out_ismul, sql):
+	def get_method_imp(self, method):
 		content = ""
+		in_isarr = method.get(CSqlParse.IN_ISARR)
+		out_isarr = method.get(CSqlParse.OUT_ISARR)
+		in_ismul = None
+		out_ismul = None
+		if in_isarr == "true":
+			in_ismul = True
+		else:
+			in_ismul = False
+		if out_isarr == "true":
+			out_ismul = True
+		else:
+			out_ismul = False
+		func_name = method.get(CSqlParse.FUNC_NAME)
+		input_params = method.get(CSqlParse.INPUT_PARAMS)
+		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
+		input_class_name = self.get_input_struct_name(func_name)
+		output_class_name = self.get_output_struct_name(func_name)
+		sql = method.get(CSqlParse.SQL)
+		sql = re.sub(r"\\", "", sql)
 		# sql, fulls = self.__replace_sql_brace(input_params, sql, False)
 		content += "\t"*1 + 'var rowCount uint64 = 0\n'
 		# content += "\t"*1 + 'stmt, err := this.m_db.Prepare(fmt.Sprintf(`{0}`'.format(sql)
@@ -411,5 +460,5 @@ if __name__ == "__main__":
 	parser = CSqlParse("./file/user_info.sql")
 	parser.read()
 	info_dict = parser.get_info_dict()
-	writer = CWriteInterface(parser.get_file_path(), root="./obj")
+	writer = CWriteInterface(parser, parser.get_file_path(), root="./obj")
 	writer.write(info_dict)

@@ -40,3 +40,8 @@ type CUpdateUsername3Input struct {
 	Username string
 }
 
+type CSubTestInput struct {
+	UserName string
+	UserAge int
+}
+

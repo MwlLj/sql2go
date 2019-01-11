@@ -4,15 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"database/sql"
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"regexp"
 	"strconv"
+	"fmt"
+	"errors"
 )
 
-type CDbHandler struct {
+type CDbHandler struct  {
 	m_db *sql.DB
 }
 
@@ -30,7 +30,7 @@ func (this *CDbHandler) Connect(host string, port uint, username string, userpwd
 	var name string
 	if dbtype == "mysql" {
 		name = b.String()
-	} else if dbtype == "sqlite" {
+	} else if dbtype == "sqlite3" {
 		name = dbname
 	} else {
 		return errors.New("dbtype not support")
@@ -94,7 +94,7 @@ func (this *CDbHandler) Disconnect() {
 	this.m_db.Close()
 }
 
-func (this *CDbHandler) Create() error {
+func (this *CDbHandler) Create() (error) {
 	var err error = nil
 	var _ error = err
 	_, err = this.m_db.Exec(`create table if not exists user_info(
@@ -128,21 +128,13 @@ create table if not exists user_info(
 
 func (this *CDbHandler) AddUserinfo(input *[]CAddUserinfoInput) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`insert into user_info values(null, ?, ?);`))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
 	for _, v := range *input {
-		rows, err := stmt.Query(v.Username, v.Userage)
+		result, err := this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), v.Username, v.Userage)
 		if err != nil {
 			continue
 		}
-		defer rows.Close()
-		for rows.Next() {
-			rowCount += 1
-		}
+		var _ = result
 	}
 	tx.Commit()
 	return nil, rowCount
@@ -150,44 +142,21 @@ func (this *CDbHandler) AddUserinfo(input *[]CAddUserinfoInput) (error, uint64) 
 
 func (this *CDbHandler) GetUserinfoById(input *CGetUserinfoByIdInput, output *CGetUserinfoByIdOutput) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`select * from user_info
-where id = ?;`))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
-	rows, err := stmt.Query(input.Id)
+	result, err := this.m_db.Exec(fmt.Sprintf(`select * from user_info
+where id = ?;`), input.Id)
 	tx.Commit()
 	if err != nil {
 		return err, rowCount
 	}
-	defer rows.Close()
-	for rows.Next() {
-		rowCount += 1
-		var id sql.NullInt64
-		var username sql.NullString
-		var userage sql.NullInt64
-		scanErr := rows.Scan(&id, &username, &userage)
-		if scanErr != nil {
-			continue
-		}
-		output.Id = int(id.Int64)
-		output.Username = username.String
-		output.Userage = int(userage.Int64)
-	}
+	var _ = result
 	return nil, rowCount
 }
 
 func (this *CDbHandler) GetAllUserinfo(output *[]CGetAllUserinfoOutput) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`select * from user_info;`))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
-	rows, err := stmt.Query()
+	rows, err := this.m_db.Query(fmt.Sprintf(`select * from user_info;`))
 	tx.Commit()
 	if err != nil {
 		return err, rowCount
@@ -213,21 +182,13 @@ func (this *CDbHandler) GetAllUserinfo(output *[]CGetAllUserinfoOutput) (error, 
 
 func (this *CDbHandler) DeleteUser(input *[]CDeleteUserInput) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`delete from user_info where id = ?;`))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
 	for _, v := range *input {
-		rows, err := stmt.Query(v.Id)
+		result, err := this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
 		if err != nil {
 			continue
 		}
-		defer rows.Close()
-		for rows.Next() {
-			rowCount += 1
-		}
+		var _ = result
 	}
 	tx.Commit()
 	return nil, rowCount
@@ -235,61 +196,49 @@ func (this *CDbHandler) DeleteUser(input *[]CDeleteUserInput) (error, uint64) {
 
 func (this *CDbHandler) UpdateUsername(input *CUpdateUsernameInput) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`update user_info set username = ? where id = ?;`))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
-	rows, err := stmt.Query(input.Username, input.Id)
+	result, err := this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
 	tx.Commit()
 	if err != nil {
 		return err, rowCount
 	}
-	defer rows.Close()
-	for rows.Next() {
-		rowCount += 1
-	}
+	var _ = result
 	return nil, rowCount
 }
 
 func (this *CDbHandler) UpdateUsername2(input *CUpdateUsername2Input) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`update user_info set username = ? where id = ?;`))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
-	rows, err := stmt.Query(input.Username, input.Id)
+	result, err := this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input.Username, input.Id)
 	tx.Commit()
 	if err != nil {
 		return err, rowCount
 	}
-	defer rows.Close()
-	for rows.Next() {
-		rowCount += 1
-	}
+	var _ = result
 	return nil, rowCount
 }
 
 func (this *CDbHandler) UpdateUsername3(input *CUpdateUsername3Input) (error, uint64) {
 	var rowCount uint64 = 0
-	stmt, err := this.m_db.Prepare(fmt.Sprintf(`update user_info set username = ? %s;`, input.Condition))
-	fmt.Println(fmt.Sprintf(`update user_info set username = ? %s;`, input.Condition))
-	if err != nil {
-		return err, rowCount
-	}
-	defer stmt.Close()
 	tx, _ := this.m_db.Begin()
-	rows, err := stmt.Query(input.Username)
+	result, err := this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? %s;`, input.Condition), input.Username)
 	tx.Commit()
 	if err != nil {
 		return err, rowCount
 	}
-	defer rows.Close()
-	for rows.Next() {
-		rowCount += 1
-	}
+	var _ = result
 	return nil, rowCount
 }
+
+func (this *CDbHandler) SubTest(input0 *CSubTestInput, inputN1 *CUpdateUsernameInput, inputP1 *[]CDeleteUserInput) (error, uint64) {
+	var rowCount uint64 = 0
+	tx, _ := this.m_db.Begin()
+	result, err := this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input.UserName, input.UserAge)
+	tx.Commit()
+	if err != nil {
+		return err, rowCount
+	}
+	var _ = result
+	return nil, rowCount
+}
+

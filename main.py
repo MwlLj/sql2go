@@ -80,7 +80,7 @@ class CCmdHandle(CCmdlineHandle):
 		writer = CWriteParamClass(parser.get_file_path(), root=path)
 		writer.write(info_dict)
 		# 写数据库接口类
-		writer = CWriteInterface(parser.get_file_path(), root=path)
+		writer = CWriteInterface(parser, parser.get_file_path(), root=path)
 		writer.write(info_dict)
 
 	def __write_config(self, path):
