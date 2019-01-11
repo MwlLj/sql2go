@@ -258,7 +258,7 @@ func (this *CDbHandler) UpdateUsername3(input *CUpdateUsername3Input) (error, ui
 	return nil, rowCount
 }
 
-func (this *CDbHandler) SubTest(input0 *CSubTestInput, inputN1 *CUpdateUsernameInput, inputP1 *[]CDeleteUserInput) (error, uint64) {
+func (this *CDbHandler) SubTest(inputN1 *CUpdateUsernameInput, input0 *CSubTestInput, inputP1 *[]CDeleteUserInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
 	var result sql.Result

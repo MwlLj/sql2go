@@ -58,54 +58,65 @@ class CWriteInterface(CWriteBase):
 	def __join_method_param(self, method, method_define, param_no):
 		if method is None:
 			return method_define
+		sub_func_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
 		func_name = method.get(CSqlParse.FUNC_NAME)
-		input_class_name = self.get_input_struct_name(func_name)
-		output_class_name = self.get_output_struct_name(func_name)
-		in_isarr = method.get(CSqlParse.IN_ISARR)
-		out_isarr = method.get(CSqlParse.OUT_ISARR)
-		in_ismul = None
-		out_ismul = None
-		if in_isarr == "true":
-			in_ismul = True
-		else:
-			in_ismul = False
-		if out_isarr == "true":
-			out_ismul = True
-		else:
-			out_ismul = False
-		input_params = method.get(CSqlParse.INPUT_PARAMS)
-		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
-		input_params_len = 0
-		output_params_len = 0
-		if input_params is not None:
-			input_params_len = len(input_params)
-		if output_params is not None:
-			output_params_len = len(output_params)
-		# 获取输入输出参数的字符串
-		input_str = input_class_name
-		output_str = output_class_name
-		if in_ismul is True:
-			input_str = "[]{0}".format(input_class_name)
-		if out_ismul is True:
-			output_str = "[]{0}".format(output_class_name)
-		if input_params_len == 0 and output_params_len == 0:
-			method_define += ""
-		elif input_params_len > 0 and output_params_len == 0:
-			method_define += "input{1} *{0}".format(input_str, param_no)
-		elif input_params_len == 0 and output_params_len > 0:
-			method_define += "output{1} *{0}".format(output_str, param_no)
-		elif input_params_len > 0 and output_params_len > 0:
-			method_define += "input{2} *{0}, output{2} *{1}".format(input_str, output_str, param_no)
-		else:
-			return None
-		sub_func_list = method.get(CSqlParse.SUB_FUNC_LIST)
-		if sub_func_list is None:
+		def inner(method_define):
+			input_class_name = self.get_input_struct_name(func_name)
+			output_class_name = self.get_output_struct_name(func_name)
+			in_isarr = method.get(CSqlParse.IN_ISARR)
+			out_isarr = method.get(CSqlParse.OUT_ISARR)
+			in_ismul = None
+			out_ismul = None
+			if in_isarr == "true":
+				in_ismul = True
+			else:
+				in_ismul = False
+			if out_isarr == "true":
+				out_ismul = True
+			else:
+				out_ismul = False
+			input_params = method.get(CSqlParse.INPUT_PARAMS)
+			output_params = method.get(CSqlParse.OUTPUT_PARAMS)
+			input_params_len = 0
+			output_params_len = 0
+			if input_params is not None:
+				input_params_len = len(input_params)
+			if output_params is not None:
+				output_params_len = len(output_params)
+			# 获取输入输出参数的字符串
+			input_str = input_class_name
+			output_str = output_class_name
+			if in_ismul is True:
+				input_str = "[]{0}".format(input_class_name)
+			if out_ismul is True:
+				output_str = "[]{0}".format(output_class_name)
+			if input_params_len == 0 and output_params_len == 0:
+				method_define += ""
+			elif input_params_len > 0 and output_params_len == 0:
+				method_define += "input{1} *{0}".format(input_str, param_no)
+			elif input_params_len == 0 and output_params_len > 0:
+				method_define += "output{1} *{0}".format(output_str, param_no)
+			elif input_params_len > 0 and output_params_len > 0:
+				method_define += "input{2} *{0}, output{2} *{1}".format(input_str, output_str, param_no)
+			else:
+				return None
 			return method_define
+		if sub_func_list is None:
+			method_define = inner(method_define)
 		else:
+			i = 0
+			length = len(sub_func_list)
 			for sub_func_name, sub_func_index in sub_func_list:
+				i += 1
+				if func_name == sub_func_name:
+					method_define = inner(method_define)
+					if i < length:
+						method_define += ", "
+					continue
 				method_info = self.m_parser.get_methodinfo_by_methodname(sub_func_name)
-				method_define += ", "
 				method_define = self.__join_method_param(method_info, method_define, self.__sub_func_index_change(sub_func_index))
+				if i < length:
+					method_define += ", "
 		return method_define
 
 	def __sub_func_index_change(self, sub_func_index):
