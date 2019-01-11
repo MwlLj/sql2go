@@ -126,3 +126,17 @@ update user_info set username = {1} {0};
 #define subTest
 insert into user_info values(null, {0}, {1});
 #end
+
+/*
+	@bref 子句测试pro
+	@is_brace true
+	@in_isarr false
+	@out_isarr false
+	@in userName: string
+	@in userAge: int
+	@sub subTest[-1]
+	@sub addUserinfo[1]
+*/
+#define subTestPro
+insert into user_info values(null, {0}, {1});
+#end

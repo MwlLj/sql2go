@@ -45,3 +45,8 @@ type CSubTestInput struct {
 	UserAge int
 }
 
+type CSubTestProInput struct {
+	UserName string
+	UserAge int
+}
+

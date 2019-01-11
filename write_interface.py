@@ -60,7 +60,7 @@ class CWriteInterface(CWriteBase):
 			return method_define
 		sub_func_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
 		func_name = method.get(CSqlParse.FUNC_NAME)
-		def inner(method_define):
+		def inner(method_define, param_no):
 			input_class_name = self.get_input_struct_name(func_name)
 			output_class_name = self.get_output_struct_name(func_name)
 			in_isarr = method.get(CSqlParse.IN_ISARR)
@@ -93,31 +93,32 @@ class CWriteInterface(CWriteBase):
 			if input_params_len == 0 and output_params_len == 0:
 				method_define += ""
 			elif input_params_len > 0 and output_params_len == 0:
-				method_define += "input{1} *{0}".format(input_str, param_no)
+				method_define += "input{1} *{0}".format(input_str, str(param_no))
 			elif input_params_len == 0 and output_params_len > 0:
-				method_define += "output{1} *{0}".format(output_str, param_no)
+				method_define += "output{1} *{0}".format(output_str, str(param_no))
 			elif input_params_len > 0 and output_params_len > 0:
-				method_define += "input{2} *{0}, output{2} *{1}".format(input_str, output_str, param_no)
+				method_define += "input{2} *{0}, output{2} *{1}".format(input_str, output_str, str(param_no))
 			else:
 				return None
-			return method_define
+			param_no += 1
+			return method_define, param_no
 		if sub_func_list is None:
-			method_define = inner(method_define)
+			method_define, param_no = inner(method_define, param_no)
 		else:
 			i = 0
 			length = len(sub_func_list)
 			for sub_func_name, sub_func_index in sub_func_list:
 				i += 1
 				if func_name == sub_func_name:
-					method_define = inner(method_define)
+					method_define, param_no = inner(method_define, param_no)
 					if i < length:
 						method_define += ", "
 					continue
 				method_info = self.m_parser.get_methodinfo_by_methodname(sub_func_name)
-				method_define = self.__join_method_param(method_info, method_define, self.__sub_func_index_change(sub_func_index))
+				method_define, param_no = self.__join_method_param(method_info, method_define, param_no)
 				if i < length:
 					method_define += ", "
-		return method_define
+		return method_define, param_no
 
 	def __sub_func_index_change(self, sub_func_index):
 		if sub_func_index == "":
@@ -144,10 +145,7 @@ class CWriteInterface(CWriteBase):
 			# ################################
 			func_name = method.get(CSqlParse.FUNC_NAME)
 			method_name = self.get_interface_name(func_name)
-			param_no = ""
-			if method.get(CSqlParse.SUB_FUNC_LIST) is not None:
-				param_no = "0"
-			method_define = self.__join_method_param(method, "", param_no)
+			method_define, _ = self.__join_method_param(method, "", 0)
 			if method_define is None:
 				return content
 			else:
@@ -207,12 +205,8 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + "var _ = result\n"
 		content += "\t"*1 + "var err error\n"
 		sub_func_sort_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
-		if sub_func_sort_list is None:
-			content += self.__write_input(method, "")
-		else:
-			for func_name, sub_func_index in sub_func_sort_list:
-				method_info = self.m_parser.get_methodinfo_by_methodname(func_name)
-				content += self.__write_input(method_info, sub_func_index)
+		c, _ = self.__write_input(method, "", 0)
+		content += c
 		tc = 1
 		if in_ismul is True:
 			tc = 2
@@ -222,7 +216,7 @@ class CWriteInterface(CWriteBase):
 			content += "\t"*tc + 'defer rows.Close()\n'
 			content += "\t"*tc + 'for rows.Next() {\n'
 			content += "\t"*(tc+1) + 'rowCount += 1\n'
-			content += self.__write_output(tc+1, output_class_name, output_params, out_ismul)
+			content += self.__write_output(tc+1, output_class_name, output_params, out_ismul, 0)
 			content += "\t"*tc + '}\n'
 		else:
 			content += "\t"*tc + "var _ = result\n"
@@ -231,8 +225,7 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
-	def __write_input(self, method, sub_func_index):
-		param_no = self.__sub_func_index_change(sub_func_index)
+	def __write_input(self, method, content, param_no):
 		in_isarr = method.get(CSqlParse.IN_ISARR)
 		out_isarr = method.get(CSqlParse.OUT_ISARR)
 		in_ismul = None
@@ -247,45 +240,56 @@ class CWriteInterface(CWriteBase):
 			out_ismul = False
 		func_name = method.get(CSqlParse.FUNC_NAME)
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
-		sql = method.get(CSqlParse.SQL)
-		sql = re.sub(r"\\", "", sql)
-		# start
-		content = ""
-		tc = 1
-		var_name = "input{0}".format(param_no)
-		if in_ismul is True:
-			tc = 2
-			var_name = "v"
-			content += "\t"*1 + "for _, v := range *input" + param_no + " {\n"
-		if out_ismul is True:
-			content += "\t"*tc + "rows, err := this.m_db.Query("
-		else:
-			content += "\t"*tc + "result, err = this.m_db.Exec("
-		sql, fulls = self.__replace_sql_brace(input_params, sql, False)
-		content += 'fmt.Sprintf(`{0}`'.format(sql)
-		if input_params is not None:
-			for param in input_params:
-				is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
-				if is_cond is True:
-					param_name = param.get(CSqlParse.PARAM_NAME)
-					content += ", {1}.{0}".format(CStringTools.upperFirstByte(param_name), var_name)
-		content += ")"
-		content += self.__write_query_params(input_params, var_name, fulls)
-		content += ")\n"
-		tc = 1
-		end_str = "return err, rowCount"
-		if in_ismul is True:
-			tc = 2
+		sub_func_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
+		def inner(content, param_no):
+			sql = method.get(CSqlParse.SQL)
+			sql = re.sub(r"\\", "", sql)
+			tc = 1
+			var_name = "input{0}".format(str(param_no))
+			if in_ismul is True:
+				tc = 2
+				var_name = "v"
+				content += "\t"*1 + "for _, v := range *input" + str(param_no) + " {\n"
+			if out_ismul is True:
+				content += "\t"*tc + "rows, err := this.m_db.Query("
+			else:
+				content += "\t"*tc + "result, err = this.m_db.Exec("
+			sql, fulls = self.__replace_sql_brace(input_params, sql, False)
+			content += 'fmt.Sprintf(`{0}`'.format(sql)
+			if input_params is not None:
+				for param in input_params:
+					is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
+					if is_cond is True:
+						param_name = param.get(CSqlParse.PARAM_NAME)
+						content += ", {1}.{0}".format(CStringTools.upperFirstByte(param_name), var_name)
+			content += ")"
+			content += self.__write_query_params(input_params, var_name, fulls)
+			content += ")\n"
+			tc = 1
 			end_str = "return err, rowCount"
-		content += "\t"*tc + 'if err != nil {\n'
-		content += "\t"*(tc+1) + 'tx.Rollback()\n'
-		content += "\t"*(tc+1) + '{0}\n'.format(end_str)
-		content += "\t"*tc + '}\n'
-		if in_ismul is True:
-			content += "\t"*1 + '}\n'
-		return content
+			if in_ismul is True:
+				tc = 2
+				end_str = "return err, rowCount"
+			content += "\t"*tc + 'if err != nil {\n'
+			content += "\t"*(tc+1) + 'tx.Rollback()\n'
+			content += "\t"*(tc+1) + '{0}\n'.format(end_str)
+			content += "\t"*tc + '}\n'
+			if in_ismul is True:
+				content += "\t"*1 + '}\n'
+			param_no += 1
+			return content, param_no
+		if sub_func_list is None:
+			content, param_no = inner(content, param_no)
+		else:
+			for sub_func_name, sub_func_index in sub_func_list:
+				if func_name == sub_func_name:
+					content, param_no = inner(content, param_no)
+					continue
+				method_info = self.m_parser.get_methodinfo_by_methodname(sub_func_name)
+				content, param_no = self.__write_input(method_info, content, param_no)
+		return content, param_no
 
-	def __write_output(self, tc, output_class_name, output_params, out_ismul):
+	def __write_output(self, tc, output_class_name, output_params, out_ismul, param_no):
 		content = ""
 		length = 0
 		if output_params is not None:
@@ -317,13 +321,13 @@ class CWriteInterface(CWriteBase):
 		if out_ismul is True:
 			pre = "tmp"
 		else:
-			pre = "output"
+			pre = "output".format(str(param_no))
 		for param in output_params:
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			content += "\t"*tc + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
 		if out_ismul is True:
-			content += "\t"*tc + "*output = append(*output, tmp)\n"
+			content += "\t"*tc + "*output{0} = append(*output{0}, tmp)\n".format(str(param_no))
 		return content
 
 	def __write_query_params(self, input_params, var_name, fulls):
