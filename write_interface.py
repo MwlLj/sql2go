@@ -196,30 +196,16 @@ class CWriteInterface(CWriteBase):
 			out_ismul = False
 		func_name = method.get(CSqlParse.FUNC_NAME)
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
-		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 		input_class_name = self.get_input_struct_name(func_name)
-		output_class_name = self.get_output_struct_name(func_name)
 		content += "\t"*1 + 'var rowCount uint64 = 0\n'
 		content += "\t"*1 + "tx, _ := this.m_db.Begin()\n"
 		content += "\t"*1 + "var result sql.Result\n"
 		content += "\t"*1 + "var _ = result\n"
 		content += "\t"*1 + "var err error\n"
+		content += "\t"*1 + "var _ error = err\n"
 		sub_func_sort_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
 		c, _ = self.__write_input(method, "", 0)
 		content += c
-		tc = 1
-		if in_ismul is True:
-			tc = 2
-		if in_ismul is False:
-			content += "\t"*1 + "tx.Commit()\n"
-		if out_ismul is True:
-			content += "\t"*tc + 'defer rows.Close()\n'
-			content += "\t"*tc + 'for rows.Next() {\n'
-			content += "\t"*(tc+1) + 'rowCount += 1\n'
-			content += self.__write_output(tc+1, output_class_name, output_params, out_ismul, 0)
-			content += "\t"*tc + '}\n'
-		else:
-			content += "\t"*tc + "var _ = result\n"
 		if in_ismul is True:
 			content += "\t"*1 + "tx.Commit()\n"
 		content += "\t"*1 + 'return nil, rowCount\n'
@@ -240,7 +226,9 @@ class CWriteInterface(CWriteBase):
 			out_ismul = False
 		func_name = method.get(CSqlParse.FUNC_NAME)
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
+		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 		sub_func_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
+		output_class_name = self.get_output_struct_name(func_name)
 		def inner(content, param_no):
 			sql = method.get(CSqlParse.SQL)
 			sql = re.sub(r"\\", "", sql)
@@ -274,6 +262,16 @@ class CWriteInterface(CWriteBase):
 			content += "\t"*(tc+1) + 'tx.Rollback()\n'
 			content += "\t"*(tc+1) + '{0}\n'.format(end_str)
 			content += "\t"*tc + '}\n'
+			if in_ismul is False:
+				content += "\t"*1 + "tx.Commit()\n"
+			if out_ismul is True:
+				content += "\t"*tc + 'defer rows.Close()\n'
+				content += "\t"*tc + 'for rows.Next() {\n'
+				content += "\t"*(tc+1) + 'rowCount += 1\n'
+				content += self.__write_output(tc+1, output_class_name, output_params, out_ismul, 0)
+				content += "\t"*tc + '}\n'
+			else:
+				content += "\t"*tc + "var _ = result\n"
 			if in_ismul is True:
 				content += "\t"*1 + '}\n'
 			param_no += 1
