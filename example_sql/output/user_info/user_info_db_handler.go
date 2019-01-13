@@ -132,14 +132,15 @@ func (this *CDbHandler) AddUserinfo(input0 *[]CAddUserinfoInput) (error, uint64)
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	for _, v := range *input0 {
 		result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), v.Username, v.Userage)
 		if err != nil {
 			tx.Rollback()
 			return err, rowCount
 		}
-	}
 		var _ = result
+	}
 	tx.Commit()
 	return nil, rowCount
 }
@@ -150,14 +151,31 @@ func (this *CDbHandler) GetUserinfoById(input0 *CGetUserinfoByIdInput, output0 *
 	var result sql.Result
 	var _ = result
 	var err error
-	result, err = this.m_db.Exec(fmt.Sprintf(`select * from user_info
+	var _ error = err
+	rows0, err := this.m_db.Query(fmt.Sprintf(`select * from user_info
 where id = ?;`), input0.Id)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
 	tx.Commit()
-	var _ = result
+	defer rows0.Close()
+	for rows0.Next() {
+		rowCount += 1
+		var id sql.NullInt64
+		var username sql.NullString
+		var userage sql.NullInt64
+		scanErr := rows0.Scan(&id, &username, &userage)
+		if scanErr != nil {
+			continue
+		}
+		output0.Id = int(id.Int64)
+		output0.IdIsValid = id.Valid
+		output0.Username = username.String
+		output0.UsernameIsValid = username.Valid
+		output0.Userage = int(userage.Int64)
+		output0.UserageIsValid = userage.Valid
+	}
 	return nil, rowCount
 }
 
@@ -167,26 +185,30 @@ func (this *CDbHandler) GetAllUserinfo(output0 *[]CGetAllUserinfoOutput) (error,
 	var result sql.Result
 	var _ = result
 	var err error
-	rows, err := this.m_db.Query(fmt.Sprintf(`select * from user_info;`))
+	var _ error = err
+	rows0, err := this.m_db.Query(fmt.Sprintf(`select * from user_info;`))
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
 	tx.Commit()
-	defer rows.Close()
-	for rows.Next() {
+	defer rows0.Close()
+	for rows0.Next() {
 		rowCount += 1
 		tmp := CGetAllUserinfoOutput{}
 		var id sql.NullInt64
 		var username sql.NullString
 		var userage sql.NullInt64
-		scanErr := rows.Scan(&id, &username, &userage)
+		scanErr := rows0.Scan(&id, &username, &userage)
 		if scanErr != nil {
 			continue
 		}
 		tmp.Id = int(id.Int64)
+		tmp.IdIsValid = id.Valid
 		tmp.Username = username.String
+		tmp.UsernameIsValid = username.Valid
 		tmp.Userage = int(userage.Int64)
+		tmp.UserageIsValid = userage.Valid
 		*output0 = append(*output0, tmp)
 	}
 	return nil, rowCount
@@ -198,14 +220,15 @@ func (this *CDbHandler) DeleteUser(input0 *[]CDeleteUserInput) (error, uint64) {
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	for _, v := range *input0 {
 		result, err = this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
 		if err != nil {
 			tx.Rollback()
 			return err, rowCount
 		}
-	}
 		var _ = result
+	}
 	tx.Commit()
 	return nil, rowCount
 }
@@ -216,6 +239,7 @@ func (this *CDbHandler) UpdateUsername(input0 *CUpdateUsernameInput) (error, uin
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input0.Username, input0.Id)
 	if err != nil {
 		tx.Rollback()
@@ -232,6 +256,7 @@ func (this *CDbHandler) UpdateUsername2(input0 *CUpdateUsername2Input) (error, u
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input0.Username, input0.Id)
 	if err != nil {
 		tx.Rollback()
@@ -248,6 +273,7 @@ func (this *CDbHandler) UpdateUsername3(input0 *CUpdateUsername3Input) (error, u
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? %s;`, input0.Condition), input0.Username)
 	if err != nil {
 		tx.Rollback()
@@ -264,25 +290,29 @@ func (this *CDbHandler) SubTest(input0 *CUpdateUsernameInput, input1 *CSubTestIn
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input0.Username, input0.Id)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
+	var _ = result
 	result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input1.UserName, input1.UserAge)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
+	var _ = result
 	for _, v := range *input2 {
 		result, err = this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
 		if err != nil {
 			tx.Rollback()
 			return err, rowCount
 		}
+		var _ = result
 	}
-	tx.Commit()
-	var _ = result
 	return nil, rowCount
 }
 
@@ -292,37 +322,107 @@ func (this *CDbHandler) SubTestPro(input0 *CUpdateUsernameInput, input1 *CSubTes
 	var result sql.Result
 	var _ = result
 	var err error
+	var _ error = err
 	result, err = this.m_db.Exec(fmt.Sprintf(`update user_info set username = ? where id = ?;`), input0.Username, input0.Id)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
+	var _ = result
 	result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input1.UserName, input1.UserAge)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
+	var _ = result
 	for _, v := range *input2 {
 		result, err = this.m_db.Exec(fmt.Sprintf(`delete from user_info where id = ?;`), v.Id)
 		if err != nil {
 			tx.Rollback()
 			return err, rowCount
 		}
+		var _ = result
 	}
 	result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), input3.UserName, input3.UserAge)
 	if err != nil {
 		tx.Rollback()
 		return err, rowCount
 	}
+	tx.Commit()
+	var _ = result
 	for _, v := range *input4 {
 		result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), v.Username, v.Userage)
 		if err != nil {
 			tx.Rollback()
 			return err, rowCount
 		}
+		var _ = result
+	}
+	return nil, rowCount
+}
+
+func (this *CDbHandler) SubOutputTest(input0 *[]CSubOutputTestInput, output0 *CSubOutputTestOutput, output1 *[]CGetAllUserinfoOutput, input2 *[]CAddUserinfoInput) (error, uint64) {
+	var rowCount uint64 = 0
+	tx, _ := this.m_db.Begin()
+	var result sql.Result
+	var _ = result
+	var err error
+	var _ error = err
+	for _, v := range *input0 {
+		rows0, err := this.m_db.Query(fmt.Sprintf(`update user_info set username = ?;
+select username from user_info;`), v.UserName)
+		if err != nil {
+			tx.Rollback()
+			return err, rowCount
+		}
+		defer rows0.Close()
+		for rows0.Next() {
+			rowCount += 1
+			var userName sql.NullString
+			scanErr := rows0.Scan(&userName)
+			if scanErr != nil {
+				continue
+			}
+			output0.UserName = userName.String
+			output0.UserNameIsValid = userName.Valid
+		}
+	}
+	rows1, err := this.m_db.Query(fmt.Sprintf(`select * from user_info;`))
+	if err != nil {
+		tx.Rollback()
+		return err, rowCount
 	}
 	tx.Commit()
-	var _ = result
+	defer rows1.Close()
+	for rows1.Next() {
+		rowCount += 1
+		tmp := CGetAllUserinfoOutput{}
+		var id sql.NullInt64
+		var username sql.NullString
+		var userage sql.NullInt64
+		scanErr := rows1.Scan(&id, &username, &userage)
+		if scanErr != nil {
+			continue
+		}
+		tmp.Id = int(id.Int64)
+		tmp.IdIsValid = id.Valid
+		tmp.Username = username.String
+		tmp.UsernameIsValid = username.Valid
+		tmp.Userage = int(userage.Int64)
+		tmp.UserageIsValid = userage.Valid
+		*output1 = append(*output1, tmp)
+	}
+	for _, v := range *input2 {
+		result, err = this.m_db.Exec(fmt.Sprintf(`insert into user_info values(null, ?, ?);`), v.Username, v.Userage)
+		if err != nil {
+			tx.Rollback()
+			return err, rowCount
+		}
+		var _ = result
+	}
+	tx.Commit()
 	return nil, rowCount
 }
 

@@ -140,3 +140,18 @@ insert into user_info values(null, {0}, {1});
 #define subTestPro
 insert into user_info values(null, {0}, {1});
 #end
+
+/*
+	@bref 子句输出测试
+	@is_brace true
+	@in_isarr true
+	@out_isarr false
+	@in userName: string
+	@out userName: string
+	@sub getAllUserinfo[1]
+	@sub addUserinfo[2]
+*/
+#define subOutputTest
+update user_info set username = {0};
+select username from user_info;
+#end
