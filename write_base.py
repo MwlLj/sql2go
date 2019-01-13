@@ -49,3 +49,6 @@ class CWriteBase(object):
 
 	def get_output_struct_name(self, method_name):
 		return "C{0}Output".format(CStringTools.upperFirstByte(method_name))
+
+	def get_isvail_join_str(self):
+		return "IsValid"

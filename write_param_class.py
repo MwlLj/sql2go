@@ -54,6 +54,7 @@ class CWriteParamClass(CWriteBase):
 				raise SystemExit("[Error] method: {0}, type or name is none".format(method_name))
 			param_type = self.type_change(param_type)
 			content += "\t" + "{0} {1}\n".format(CStringTools.upperFirstByte(param_name), param_type)
+			content += "\t" + "{0}{1} bool\n".format(CStringTools.upperFirstByte(param_name), self.get_isvail_join_str())
 		content += "}\n\n"
 		return content
 

@@ -324,6 +324,7 @@ class CWriteInterface(CWriteBase):
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			content += "\t"*tc + "{0}.{1} = {2}\n".format(pre, CStringTools.upperFirstByte(param_name), self.type_back(param_type, param_name))
+			content += "\t"*tc + "{0}.{1}{3} = {2}.Valid\n".format(pre, CStringTools.upperFirstByte(param_name), param_name, self.get_isvail_join_str())
 		if out_ismul is True:
 			content += "\t"*tc + "*output{0} = append(*output{0}, tmp)\n".format(str(param_no))
 		return content
