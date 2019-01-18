@@ -284,7 +284,7 @@ func (this *CDbHandler) UpdateUsername3(input0 *CUpdateUsername3Input) (error, u
 	return nil, rowCount
 }
 
-func (this *CDbHandler) SubTest(input0 *CUpdateUsernameInput, input1 *CSubTestInput, input2 *[]CDeleteUserInput) (error, uint64) {
+func (this *CDbHandler) SubTest(input0 *CUpdateUsernameInputinput1 *CSubTestInputinput2 *[]CDeleteUserInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
 	var result sql.Result
@@ -316,7 +316,7 @@ func (this *CDbHandler) SubTest(input0 *CUpdateUsernameInput, input1 *CSubTestIn
 	return nil, rowCount
 }
 
-func (this *CDbHandler) SubTestPro(input0 *CUpdateUsernameInput, input1 *CSubTestInput, input2 *[]CDeleteUserInput, input3 *CSubTestProInput, input4 *[]CAddUserinfoInput) (error, uint64) {
+func (this *CDbHandler) SubTestPro(input0 *CUpdateUsernameInputinput1 *CSubTestInputinput2 *[]CDeleteUserInputinput3 *CSubTestProInputinput4 *[]CAddUserinfoInput) (error, uint64) {
 	var rowCount uint64 = 0
 	tx, _ := this.m_db.Begin()
 	var result sql.Result

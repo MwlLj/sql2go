@@ -60,6 +60,8 @@ class CWriteInterface(CWriteBase):
 			return method_define
 		sub_func_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
 		func_name = method.get(CSqlParse.FUNC_NAME)
+		input_params = method.get(CSqlParse.INPUT_PARAMS)
+		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 		def inner(method_define, param_no):
 			input_class_name = self.get_input_struct_name(func_name)
 			output_class_name = self.get_output_struct_name(func_name)
@@ -75,8 +77,6 @@ class CWriteInterface(CWriteBase):
 				out_ismul = True
 			else:
 				out_ismul = False
-			input_params = method.get(CSqlParse.INPUT_PARAMS)
-			output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 			input_params_len = 0
 			output_params_len = 0
 			if input_params is not None:
@@ -111,12 +111,12 @@ class CWriteInterface(CWriteBase):
 				i += 1
 				if func_name == sub_func_name:
 					method_define, param_no = inner(method_define, param_no)
-					if i < length:
+					if i < length and (input_params is not None and output_params is not None):
 						method_define += ", "
 					continue
 				method_info = self.m_parser.get_methodinfo_by_methodname(sub_func_name)
 				method_define, param_no = self.__join_method_param(method_info, method_define, param_no)
-				if i < length:
+				if i < length and (input_params is not None and output_params is not None):
 					method_define += ", "
 		return method_define, param_no
 
