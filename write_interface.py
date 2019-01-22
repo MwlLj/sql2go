@@ -111,12 +111,12 @@ class CWriteInterface(CWriteBase):
 				i += 1
 				if func_name == sub_func_name:
 					method_define, param_no = inner(method_define, param_no)
-					if i < length and (input_params is not None and output_params is not None):
+					if i < length and (input_params is not None or output_params is not None):
 						method_define += ", "
 					continue
 				method_info = self.m_parser.get_methodinfo_by_methodname(sub_func_name)
 				method_define, param_no = self.__join_method_param(method_info, method_define, param_no)
-				if i < length and (input_params is not None and output_params is not None):
+				if i < length and (input_params is not None or output_params is not None):
 					method_define += ", "
 		return method_define, param_no
 
