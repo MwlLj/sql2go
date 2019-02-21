@@ -33,8 +33,10 @@ class CWriteBase(object):
 			result = "{0}.String".format(param_name)
 		elif param_type == "int":
 			result = "int({0}.Int64)".format(param_name)
-		elif param_name == "int32":
+		elif param_type == "int32":
 			result = "int32({0}.Int64)".format(param_name)
+		elif param_type == "int64":
+			result = "int64({0}.Int64)".format(param_name)
 		elif param_type == "bool":
 			result = "bool({0}.Bool)".format(param_name)
 		else:

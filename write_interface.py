@@ -42,6 +42,7 @@ class CWriteInterface(CWriteBase):
 		self.__write_header(namespace)
 		self.m_content += self.__write_stuct()
 		self.m_content += self.__write_connect()
+		self.m_content += self.__write_connect_by_rule()
 		self.m_content += self.__write_connect_by_cfg()
 		self.m_content += self.__write_disconnect()
 		create_sql = info_dict.get(CSqlParse.CREATE_TABELS_SQL)
@@ -399,6 +400,20 @@ class CWriteInterface(CWriteBase):
 		content += "\t"*2 + 'return errors.New("dbtype not support")\n'
 		content += "\t"*1 + '}\n'
 		content += "\t"*1 + 'this.m_db, err = sql.Open(dbtype, name)\n'
+		content += "\t"*1 + 'if err != nil {\n'
+		content += "\t"*2 + 'return err\n'
+		content += "\t"*1 + '}\n'
+		content += "\t"*1 + 'this.m_db.SetMaxOpenConns(2000)\n'
+		content += "\t"*1 + 'this.m_db.SetMaxIdleConns(1000)\n'
+		content += "\t"*1 + 'this.m_db.Ping()\n'
+		content += "\t"*1 + 'return nil\n'
+		content += "}\n\n"
+		return content
+
+	def __write_connect_by_rule(self):
+		content = ""
+		content += "func (this *CDbHandler) ConnectByRule(rule string, dbtype string) (err error) {\n"
+		content += "\t"*1 + 'this.m_db, err = sql.Open(dbtype, rule)\n'
 		content += "\t"*1 + 'if err != nil {\n'
 		content += "\t"*2 + 'return err\n'
 		content += "\t"*1 + '}\n'
