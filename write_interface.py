@@ -354,15 +354,15 @@ class CWriteInterface(CWriteBase):
 			is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
 			if is_cond is False:
 				not_cond_params.append(param)
-		length = len(not_cond_params)
+		length = len(fulls)
 		if length > 0:
 			content += ", "
 		i = 0
 		for number, keyword in fulls:
 			param = input_params[number]
-			is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
-			if is_cond is True:
-				continue
+			# is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
+			# if is_cond is True:
+			# 	continue
 			i += 1
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			param_type = param.get(CSqlParse.PARAM_TYPE)
