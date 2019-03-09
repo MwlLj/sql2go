@@ -355,20 +355,24 @@ class CWriteInterface(CWriteBase):
 			if is_cond is False:
 				not_cond_params.append(param)
 		length = len(fulls)
-		if length > 0:
+		if len(not_cond_params) > 0:
 			content += ", "
 		i = 0
+		forwardIsCond = False
 		for number, keyword in fulls:
 			param = input_params[number]
-			# is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
-			# if is_cond is True:
-			# 	continue
+			is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
+			if i > 0 and is_cond is False and forwardIsCond is False:
+				content += ", "
 			i += 1
+			if is_cond is True:
+				forwardIsCond = True
+				continue
+			else:
+				forwardIsCond = False
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			content += "{0}.{1}".format(var_name, CStringTools.upperFirstByte(param_name))
-			if i < length:
-				content += ", "
 		return content
 
 	def __write_stuct(self):
