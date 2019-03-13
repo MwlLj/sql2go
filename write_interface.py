@@ -350,6 +350,24 @@ class CWriteInterface(CWriteBase):
 		if input_params is None:
 			return content
 		not_cond_params = []
+		for number, keyword in fulls:
+			param = input_params[number]
+			is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
+			if is_cond is True:
+				continue
+			not_cond_params.append(param)
+		if len(not_cond_params) > 0:
+			content += ", "
+		i = 0
+		for param in not_cond_params:
+			if i > 0:
+				content += ", "
+			i += 1
+			param_name = param.get(CSqlParse.PARAM_NAME)
+			param_type = param.get(CSqlParse.PARAM_TYPE)
+			content += "{0}.{1}".format(var_name, CStringTools.upperFirstByte(param_name))
+		"""
+		not_cond_params = []
 		for param in input_params:
 			is_cond = param.get(CSqlParse.PARAM_IS_CONDITION)
 			if is_cond is False:
@@ -373,6 +391,7 @@ class CWriteInterface(CWriteBase):
 			param_name = param.get(CSqlParse.PARAM_NAME)
 			param_type = param.get(CSqlParse.PARAM_TYPE)
 			content += "{0}.{1}".format(var_name, CStringTools.upperFirstByte(param_name))
+		"""
 		return content
 
 	def __write_stuct(self):
