@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append("../base")
 from string_tools import CStringTools
+from parse_sql import CSqlParse
 
 
 class CWriteBase(object):
@@ -46,11 +47,25 @@ class CWriteBase(object):
 	def get_interface_name(self, method_name):
 		return CStringTools.upperFirstByte(method_name)
 
-	def get_input_struct_name(self, method_name):
-		return "C{0}Input".format(CStringTools.upperFirstByte(method_name))
+	def get_input_struct_name(self, method):
+		method_name = method.get(CSqlParse.FUNC_NAME)
+		in_class = method.get(CSqlParse.IN_CLASS)
+		name = ""
+		if in_class is not None:
+			name = in_class
+		else:
+			name = method_name
+		return "C{0}Input".format(CStringTools.upperFirstByte(name))
 
-	def get_output_struct_name(self, method_name):
-		return "C{0}Output".format(CStringTools.upperFirstByte(method_name))
+	def get_output_struct_name(self, method):
+		method_name = method.get(CSqlParse.FUNC_NAME)
+		out_class = method.get(CSqlParse.OUT_CLASS)
+		name = ""
+		if out_class is not None:
+			name = out_class
+		else:
+			name = method_name
+		return "C{0}Output".format(CStringTools.upperFirstByte(name))
 
 	def get_isvail_join_str(self):
 		return "IsValid"

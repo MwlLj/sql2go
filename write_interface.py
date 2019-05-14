@@ -64,8 +64,8 @@ class CWriteInterface(CWriteBase):
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
 		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 		def inner(method_define, param_no):
-			input_class_name = self.get_input_struct_name(func_name)
-			output_class_name = self.get_output_struct_name(func_name)
+			input_class_name = self.get_input_struct_name(method)
+			output_class_name = self.get_output_struct_name(method)
 			in_isarr = method.get(CSqlParse.IN_ISARR)
 			out_isarr = method.get(CSqlParse.OUT_ISARR)
 			in_ismul = None
@@ -197,7 +197,7 @@ class CWriteInterface(CWriteBase):
 			out_ismul = False
 		func_name = method.get(CSqlParse.FUNC_NAME)
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
-		input_class_name = self.get_input_struct_name(func_name)
+		input_class_name = self.get_input_struct_name(method)
 		content += "\t"*1 + 'var rowCount uint64 = 0\n'
 		content += "\t"*1 + "tx, _ := this.m_db.Begin()\n"
 		content += "\t"*1 + "var result sql.Result\n"
@@ -229,7 +229,7 @@ class CWriteInterface(CWriteBase):
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
 		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 		sub_func_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
-		output_class_name = self.get_output_struct_name(func_name)
+		output_class_name = self.get_output_struct_name(method)
 		def inner(content, param_no):
 			sql = method.get(CSqlParse.SQL)
 			sql = re.sub(r"\\", "", sql)
@@ -303,7 +303,7 @@ class CWriteInterface(CWriteBase):
 			out_ismul = False
 		func_name = method.get(CSqlParse.FUNC_NAME)
 		output_params = method.get(CSqlParse.OUTPUT_PARAMS)
-		output_class_name = self.get_output_struct_name(func_name)
+		output_class_name = self.get_output_struct_name(method)
 		content = ""
 		length = 0
 		if output_params is not None:

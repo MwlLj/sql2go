@@ -13,7 +13,20 @@ class CWriteParamClass(CWriteBase):
 		self.m_file_handler = CFileHandle()
 		self.m_file_path = ""
 		self.m_content = ""
+		self.m_class_set = set()
 		self.__compare_file_path(file_path, root)
+
+	def __class_is_writed(self, is_input, method):
+		name = ""
+		if is_input is True:
+			name = self.get_input_struct_name(method)
+		else:
+			name = self.get_output_struct_name(method)
+		if name in self.m_class_set:
+			return True
+		else:
+			self.m_class_set.add(name)
+			return False
 
 	def __compare_file_path(self, file_path, root):
 		basename = os.path.basename(file_path)
@@ -38,13 +51,15 @@ class CWriteParamClass(CWriteBase):
 			output_params = method.get(CSqlParse.OUTPUT_PARAMS)
 			method_name = method.get(CSqlParse.FUNC_NAME)
 			if input_params is not None:
-				content += self.__write_struct(method_name, input_params, self.get_input_struct_name(method_name))
+				content += self.__write_struct(method, True, method_name, input_params, self.get_input_struct_name(method))
 			if output_params is not None:
-				content += self.__write_struct(method_name, output_params, self.get_output_struct_name(method_name))
+				content += self.__write_struct(method, False, method_name, output_params, self.get_output_struct_name(method))
 		return content
 
-	def __write_struct(self, method_name, params, struct_name):
+	def __write_struct(self, method, is_input, method_name, params, struct_name):
 		content = ""
+		if self.__class_is_writed(is_input, method) is True:
+			return content
 		content += "type {0} struct".format(struct_name)
 		content += " {\n"
 		for param in params:
