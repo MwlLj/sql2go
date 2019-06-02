@@ -207,8 +207,9 @@ class CWriteInterface(CWriteBase):
 		sub_func_sort_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
 		c, _ = self.__write_input(method, "", 0)
 		content += c
-		if in_ismul is True:
-			content += "\t"*1 + "tx.Commit()\n"
+		# if in_ismul is True:
+		# 	content += "\t"*1 + "tx.Commit()\n"
+		content += "\t"*1 + "tx.Commit()\n"
 		content += "\t"*1 + 'return nil, rowCount\n'
 		return content
 
@@ -263,8 +264,8 @@ class CWriteInterface(CWriteBase):
 			content += "\t"*(tc+1) + 'tx.Rollback()\n'
 			content += "\t"*(tc+1) + '{0}\n'.format(end_str)
 			content += "\t"*tc + '}\n'
-			if in_ismul is False:
-				content += "\t"*1 + "tx.Commit()\n"
+			# if in_ismul is False:
+			# 	content += "\t"*1 + "tx.Commit()\n"
 			if output_params is not None and len(output_params) > 0:
 				content += "\t"*tc + 'defer rows{0}.Close()\n'.format(str(param_no))
 				content += "\t"*tc + 'for rows' + str(param_no) + '.Next() {\n'
@@ -276,6 +277,8 @@ class CWriteInterface(CWriteBase):
 			if in_ismul is True:
 				content += "\t"*1 + '}\n'
 			param_no += 1
+			# if in_ismul is False:
+			# 	content += "\t"*1 + "tx.Commit()\n"
 			return content, param_no
 		if sub_func_list is None:
 			content, param_no = inner(content, param_no)
