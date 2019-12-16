@@ -199,10 +199,15 @@ class CWriteInterface(CWriteBase):
 		input_params = method.get(CSqlParse.INPUT_PARAMS)
 		input_class_name = self.get_input_struct_name(method)
 		content += "\t"*1 + 'var rowCount uint64 = 0\n'
-		content += "\t"*1 + "tx, _ := this.m_db.Begin()\n"
+		content += "\t"*1 + "if this.m_db == nil {\n"
+		content += "\t"*1 + '\treturn errors.New("db is nil"), 0\n'
+		content += "\t"*1 + "}\n"
+		content += "\t"*1 + "tx, err := this.m_db.Begin()\n"
+		content += "\t"*1 + "if err != nil {\n"
+		content += "\t"*1 + '\treturn err, 0\n'
+		content += "\t"*1 + "}\n"
 		content += "\t"*1 + "var result sql.Result\n"
 		content += "\t"*1 + "var _ = result\n"
-		content += "\t"*1 + "var err error\n"
 		content += "\t"*1 + "var _ error = err\n"
 		sub_func_sort_list = method.get(CSqlParse.SUB_FUNC_SORT_LIST)
 		c, _ = self.__write_input(method, "", 0)
