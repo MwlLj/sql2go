@@ -246,9 +246,9 @@ class CWriteInterface(CWriteBase):
 				var_name = "v"
 				content += "\t"*1 + "for _, v := range *input" + str(param_no) + " {\n"
 			if output_params is not None and len(output_params) > 0:
-				content += "\t"*tc + "rows{0}, err := this.m_db.Query(".format(str(param_no))
+				content += "\t"*tc + "rows{0}, err := tx.Query(".format(str(param_no))
 			else:
-				content += "\t"*tc + "result, err = this.m_db.Exec("
+				content += "\t"*tc + "result, err = tx.Exec("
 			sql, fulls = self.__replace_sql_brace(input_params, sql, False)
 			content += 'fmt.Sprintf(`{0}`'.format(sql)
 			if input_params is not None:
